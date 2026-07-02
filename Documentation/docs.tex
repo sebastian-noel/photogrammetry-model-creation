@@ -1,0 +1,602 @@
+% ============================================================
+%  Photogrammetry Model Creation | METIL Sim Jam
+%  Authors: Gavin Heaver, Sebastian Noel, Stevin George
+%
+% ============================================================
+\documentclass[11pt]{article}
+
+% ---------- Packages ----------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=1in]{geometry}
+\usepackage[protrusion=true,expansion=false]{microtype}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage[most]{tcolorbox}
+\usepackage{hyperref}
+\usepackage{parskip}
+
+% ---------- Colors (black, navy, orange only) ----------
+\definecolor{navy}{HTML}{14213D}      % large headings
+\definecolor{todoclr}{HTML}{DD6B20}   % orange: placeholders / TODO
+\definecolor{todobg}{HTML}{FCEFE3}
+\definecolor{iobg}{HTML}{F2F2F2}      % neutral gray fill for I/O boxes
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    urlcolor=black,
+    citecolor=black,
+    pdftitle={Photogrammetry Model Creation - METIL Sim Jam},
+    pdfauthor={Gavin Heaver, Sebastian Noel, Stevin George}
+}
+
+% ---------- Heading styling ----------
+% Section (large heading) = navy; subsection / subsubsection = black.
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{navy}}{\thesection}{0.6em}{}
+\titleformat{\subsection}
+  {\normalfont\large\bfseries}{\thesubsection}{0.6em}{}
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\bfseries}{\thesubsubsection}{0.6em}{}
+
+% ---------- Input / Output stage box (neutral) ----------
+\newtcolorbox{stageio}{
+    enhanced, breakable,
+    colback=iobg, colframe=black,
+    boxrule=0.4pt, arc=2pt,
+    left=8pt, right=8pt, top=6pt, bottom=6pt,
+    fontupper=\small
+}
+\newcommand{\inout}[2]{%
+    \begin{stageio}%
+    \textbf{Input:}~#1\\[2pt]%
+    \textbf{Output:}~#2%
+    \end{stageio}%
+}
+
+% ---------- TODO / placeholder block (orange) ----------
+\newtcolorbox{todobox}[1]{
+    enhanced, breakable,
+    colback=todobg, colframe=todoclr,
+    boxrule=0.6pt, arc=2pt,
+    left=8pt, right=8pt, top=6pt, bottom=6pt,
+    fonttitle=\bfseries\small,
+    coltitle=white, colbacktitle=todoclr,
+    title={#1}
+}
+
+% ---------- Note callout (navy title, neutral fill) ----------
+\newtcolorbox{notebox}[1]{
+    enhanced, breakable,
+    colback=iobg, colframe=navy,
+    boxrule=0.5pt, arc=2pt,
+    left=8pt, right=8pt, top=6pt, bottom=6pt,
+    fonttitle=\bfseries\small,
+    coltitle=white, colbacktitle=navy,
+    title={#1}
+}
+
+% ---------- Figure placeholder (orange) ----------
+% Renders a labeled box so the document compiles without images.
+% Replace \figph{...} with \includegraphics later.
+\newcounter{figph}
+% \figph[<width>]{<caption>}{<image-file>}  (leave <image-file> empty to keep the placeholder)
+\newcommand{\figph}[3][0.62\linewidth]{%
+  \begin{center}
+  \refstepcounter{figph}%
+  \if\relax\detokenize{#3}\relax
+    % Placeholder (orange box)
+    \setlength{\fboxsep}{0pt}%
+    \fcolorbox{todoclr}{todobg}{%
+      \begin{minipage}[c][2.6cm][c]{#1}
+        \centering
+        \itshape\color{todoclr}\small [\,Figure placeholder: add image here\,]
+      \end{minipage}}%
+    \\[3pt]
+    {\small\itshape\color{todoclr}Figure~\thefigph. #2}%
+  \else
+    % Real image (no orange background)
+    \includegraphics[width=#1]{#3}\\[3pt]
+    {\small\itshape Figure~\thefigph. #2}%
+  \fi
+  \end{center}
+}
+
+% \figphTwo[<overall-width>]{<caption>}{<left-image>}{<right-image>}
+\newcommand{\figphTwo}[4][\linewidth]{%
+  \begin{center}
+  \refstepcounter{figph}%
+  \includegraphics[width=0.49#1]{#3}\hfill
+  \includegraphics[width=0.49#1]{#4}\\[3pt]
+  {\small\itshape Figure~\thefigph. #2}%
+  \end{center}
+}
+
+% \figphThree[<overall-width>]{<caption>}{<left>}{<middle>}{<right>}
+\newcommand{\figphThree}[5][\linewidth]{%
+  \begin{center}
+  \refstepcounter{figph}%
+  \includegraphics[width=0.32#1]{#3}\hfill
+  \includegraphics[width=0.32#1]{#4}\hfill
+  \includegraphics[width=0.32#1]{#5}\\[3pt]
+  {\small\itshape Figure~\thefigph. #2}%
+  \end{center}
+}
+
+% ---------- Pipeline overview stage (orange placeholder, black label + caption) ----------
+\newcommand{\pipestage}[3][]{%
+  \begin{minipage}[c]{0.28\linewidth}
+    \centering
+    % If an image filename is provided, show it; otherwise keep the placeholder.
+    \if\relax\detokenize{#1}\relax
+      \setlength{\fboxsep}{0pt}%
+      \fcolorbox{todoclr}{todobg}{%
+        \begin{minipage}[c][2.1cm][c]{\linewidth}
+          \centering
+          \itshape\color{todoclr}\footnotesize [\,Image placeholder\,]
+        \end{minipage}}%
+    \else
+      \includegraphics[width=\linewidth,height=2.1cm,keepaspectratio]{#1}%
+    \fi
+    \\[5pt]
+    \textbf{#2}\\[1pt]
+    {\footnotesize\itshape #3}
+  \end{minipage}%
+}
+
+\setcounter{tocdepth}{2}   % TOC lists sections and subsections
+
+% ============================================================
+\begin{document}
+
+% ---------- Page 1: title, authors, abstract ----------
+\begin{center}
+    {\LARGE\bfseries\color{navy} Photogrammetry Model Creation}\\[4pt]
+    {\large UCF Institute for Simulation \& Training  \textbar{} Quickstart SimJam}\\[10pt]
+    {\large Gavin Heaver \quad\textbullet\quad Sebastian Noel \quad\textbullet\quad Stevin George}\\[6pt]
+\end{center}
+
+\vspace{2pt}
+\hrule height 0.8pt
+\vspace{14pt}
+
+\section*{Abstract}
+\noindent This project documents a repeatable pipeline for turning ordinary, flat (2D) photographs into textured, colorized 3D models that are ready for use in VR and simulation applications. Using RealityScan as the core photogrammetry tool, the process moves from photography, to model generation, to rigging in Blender, and finally to import into Unity. A deliberate constraint of the project was to avoid AI and cloud-based tools, which act as security risks, while still keeping the workflow convenient and the resulting models lightweight enough to remain computationally inexpensive. We found that high-quality results are achievable with accessible equipment (a single DSLR/mirrorless camera, controlled lighting, and disciplined photography), provided a consistent set of rules is followed. The workflow is organized by object scale (small/medium objects, large objects, extra-large rooms, and people) so that it can serve as a practical, step-by-step guide from the first photo to a Unity-ready model.
+
+\vspace{16pt}
+\begin{center}
+{\small\bfseries Pipeline Overview}\\[6pt]
+\pipestage[images/photo1.png]{Photography}{Capture and organize photos}%
+\hfill\raisebox{0.95cm}{\large$\longrightarrow$}\hfill
+\pipestage[images/reality1.png]{RealityScan}{Generate the initial 3D model}%
+\hfill\raisebox{0.95cm}{\large$\longrightarrow$}\hfill
+\pipestage[images/blender1.png]{Blender}{Clean, decimate, and rig}%
+\\[6pt]
+\bigskip
+{\footnotesize\itshape The result feeds into Unity for VR/simulation use.}
+\end{center}
+
+\newpage
+
+% ---------- Page 2: table of contents ----------
+\tableofcontents
+
+\newpage
+
+% ============================================================
+\section{Introduction (Precursors)}
+This section covers the goals, limitations, and general principles that apply to the entire pipeline. Read it before attempting any scan; most photography mistakes trace back to one of the principles below.
+
+\subsection{Goals and Major Limitations}
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Major limits:} Avoid using AI and avoid using the cloud, as both act as security risks.
+  \item \textbf{Major goals:} Maintain a good level of convenience (not requiring insanely professional materials) without sacrificing quality, while also keeping the renderings from being computationally expensive (i.e., not an insane number of polygons).
+  \item \textbf{Items for photography:} one DSLR camera (with reasonable accessories such as a lens, SD card, battery, etc.), a tripod, a table to support items, lights, and computers for moving images.
+\end{itemize}
+
+\subsection{Notes on RealityScan}
+\begin{itemize}[leftmargin=1.4em]
+  \item RealityScan does support LiDAR files to develop renderings; however, the goal of this project is to limit it to flat, 2D photos to make 3D models. Using LiDAR, either by itself or alongside 2D photos, is a direction for further research (see Section~\ref{sec:future}).
+  \item There is a RealityScan mobile app, but it can't be used because its processing comes from Epic Games' cloud servers.
+  \item RealityScan is a very smart program. While there are many rules you can follow, there are also many that can be bent.
+\end{itemize}
+
+\begin{notebox}{Version note}
+This documentation was produced with \textbf{RealityScan 2.1.1}, so every menu name, shortcut, and setting below refers to that version. Shortly after this work, \textbf{RealityScan 2.2} was released (June 24, 2026), and its most relevant change is \textbf{AMD GPU support}: GPU-accelerated reconstruction was previously limited to NVIDIA cards, and 2.2 extends it to AMD Radeon and Ryzen AI Max hardware, with the ability to mix AMD and NVIDIA GPUs in one machine (Windows only at launch, Linux planned). For this project that mainly matters as accessibility: it lowers the hardware barrier for reproducing this workflow, since a scanning machine no longer needs a specific NVIDIA card. Version 2.2 also adds a 360-camera capture workflow, which is worth revisiting for room-scale scans (see Section~\ref{sec:future}). The photography and general principles in this guide are version-independent; only the exact RealityScan interface steps may shift slightly on 2.2.
+\end{notebox}
+
+\subsection{General Limitations}
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Holes:} It doesn't like holes (screw holes or ports). More precisely, it won't scan that depth; it just makes the port look flat.
+  \item \textbf{Shine:} It really does not like any type of shine on objects. Truly try to make objects matte.
+  \item \textbf{Mirrors / reflective materials:} RealityScan looks for consistency across photos, where objects keep the same appearance from different angles, because that consistency is how it connects points. Reflective materials look different depending on the viewing angle, which ruins that consistency and makes photos that would normally line up no longer share the same 2D details.
+\end{itemize}
+
+\subsection{Photography Principles for Good Alignment}
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Overlap and coverage:} The more photos that follow the rules, the better. A good rule of thumb is 60--80\% overlap between photos (how much of one picture is repeated in another). Another is that any single point on an object should appear in at least 5 different photos.
+  \item \textbf{Transitioning between layers:} The same overlap logic applies when adding layers (height/angle bands) of photos. Don't increase or decrease height too much, or the overlap drops and RealityScan sees too many new points it can't place. For example, if the highest angled layer is 30\textdegree{} above the object, add a 15\textdegree{} layer to transition between the middle and the highest, connecting them. Otherwise, when aligning, RealityScan might not use all the photo layers because it can't find points similar enough to attach a layer, effectively wasting that layer, with its detail left out of the model.
+  \item \textbf{Each photo should add new data:} ``The more photos, the better'' holds only if each photo shows the object in at least a slightly new way. If two photos are nearly identical, one will be useless or they may slightly confuse the program for that angle.
+  \item \textbf{Consistency:} Don't continue if things change for the object being photographed; RealityScan likes consistency. If things don't line up perfectly, it doesn't truly know where they go. If something changes, restart (e.g., while shooting a rock, if it wasn't perfectly balanced and it moves, restart from the new position).
+\end{itemize}
+
+\subsection*{Final Note}
+Everything here is based on our experience and research. While we tried to cover as much as possible, there are still things we couldn't look into due to limitations; those are covered in the Future Research section (Section~\ref{sec:future}).
+
+% ============================================================
+\section{Common Workflow (Shared Across All Categories)}
+\label{sec:common}
+The steps below are identical for every object-size category. Each category section that follows references this one and lists \emph{only} what differs. When a category section is silent on a topic, the common workflow here applies.
+
+% ----------------------------------------------------------
+\subsection{Photography, Common Setup}
+\label{sec:common-photo}
+\inout{a subject, camera, and lighting to be set up}{organized photos of the subject, exported as JPEG and ready for RealityScan}
+
+\subsubsection{Camera}
+Use a DSLR/mirrorless camera if available for the best results. A phone camera is convenient but does not produce results that are as good.
+
+\subsubsection{Lighting}
+Use flat, even lighting surrounding the subject. A good arrangement is a light above plus 2--3 lights surrounding the subject (one in front, one in back, and one off to the side to show depth). Take photos inside rather than outside if possible. If outside, shoot on overcast days and keep the light as controlled as possible. The overall goal is to show depth while minimizing shadows and unneeded highlights, so as to capture as much of the subject as possible.
+
+\subsubsection{Camera Settings}
+\begin{description}[leftmargin=1.6em, style=nextline]
+  \item[Flash] Avoid flash and rely on the flat lighting. Only use it if limited lighting is available and you need it for depth.
+  \item[Stability] A tripod gives the absolute best results where available; however, stable hands work perfectly well. Every scan in this project came from stable hands, patience, and confirming that the subject was framed correctly.
+  \item[Camera mode] As long as intense filters are avoided and flash isn't used, many standard camera modes are fine. A good option is the equivalent of Canon's ``P Mode'' (Program AE / Smart Auto), which avoids flash while automatically setting shutter speed and aperture; its biggest weakness is glare on shiny objects. For the best results and full control, Manual is recommended. A good baseline is: aperture between f/8 and f/11, ISO 100, shutter speed 1/125\,s, and a manual white balance.
+  \item[Low-light compromises] If the light isn't great or details look too dark, adjust in this order to add brightness while minimizing warping or blur: (1) lower the shutter speed (fine on a tripod, but not recommended below 1/40--1/60\,s handheld, or photos blur); (2) raise the ISO; (3) if still needed, widen the aperture to around f/6. Play with these to find the best combination for the situation, starting with shutter speed, then ISO, and lastly aperture.
+\end{description}
+
+\noindent\textit{Example (exposure compromise).} The Rubik's cube is a relatively shiny object shot handheld without the best lighting. It was coated with dry shampoo and shot at shutter speed 1/40\,s, aperture f/8, and ISO 1600; the ISO is roughly at the upper limit of what we'd recommend.
+
+\subsubsection{Focus}
+Keep the subject in focus in every photo, and try to keep it equally focused across the frame so RealityScan can identify the characteristics surrounding each ``center'' point. A little focus falloff on one point won't ruin a scan, but limit blurriness on the subject as much as possible.
+
+\subsubsection{Filling the Frame}
+The frame should completely capture the subject, with the subject filling roughly 70--80\% of the frame. Position yourself based on your focal length to best meet this. Photos can be horizontal or vertical, whichever maximizes the subject in the frame.
+
+\subsubsection{Reducing Shine and Glare}
+\label{sec:common-shine}
+Coat flat, shiny, transparent, or single-colored objects with scanning spray or dry shampoo to give a matte finish for RealityScan to ``bite onto'' and notice details better. We used dry shampoo because it was what was available, but KCNSC has access to approved scanning spray, so try that first. If the shine itself is important, you can still photograph it, but expect extra time avoiding the shine reading as specific colors or light (e.g., reflecting a surface color); make sure surroundings don't heavily conflict (lights) while also not blending in (e.g., a gray table behind a shiny black object). If the surface is more ``mirror'' than just shiny, give it a matte finish, or scans won't appear correctly (they look concave). If color doesn't matter and you just need a model, you can also add differently colored marks with paint, markers, or tape. A more professional option, researched but not tested here, is using polarizing film over the lights and/or a polarizing filter on the lens; orienting the two 90\textdegree{} apart is called ``cross-polarization'' and eliminates glare. This is discussed further in Section~\ref{sec:future}.
+
+\subsubsection{File Handling}
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Shoot RAW, but don't use the RAW files.} Shoot in RAW to maximize data, but don't use the RAW photo files in RealityScan.
+  \item \textbf{Use high-quality JPEG.} RealityScan supports many file types, but the most consistent results came from JPEG. DSLR/mirrorless RAW files were inconsistent (to the point of crashing the program), so aim for high-quality JPEG.
+  \item \textbf{Convert phone photos to JPEG (not HEIC/HEIF).} On iPhone, the simplest direct conversion is to copy all the photos in the Gallery app and paste them into a designated folder in the Files app; this copy-and-paste converts them to JPEG, after which they can be saved to a USB flash drive or emailed. On Android, find a guide for your specific phone, but as a rule of thumb you can either turn off HEIF in the Camera settings (under ``Advanced''), or convert existing photos in the Gallery app by tapping the photo, hitting edit (a pencil icon, or via the three-dots menu), and saving a copy as JPEG.
+  \item \textbf{Divide top and bottom files.} Where applicable, split the files into a ``Top'' folder and a ``Bottom'' folder for each object so RealityScan can render them separately before combining. Otherwise it can't orient what's on top versus bottom relative to the surface the object is laying on.
+\end{itemize}
+
+% ----------------------------------------------------------
+\subsection{RealityScan, Common Workflow}
+\label{sec:common-rs}
+\inout{organized photos of the subject}{an initial 3D model (textured and colorized)}
+This is the stage that turns the photo set into a 3D model. The order is always the same: import photos, align them into a sparse point cloud, restrict the model to the area you care about, mask out everything else, mesh, clean, texture, and export. The subsections below follow that order.
+
+\subsubsection{Prepare the Image Sets}
+Keep each capture pass in a clearly named folder before importing it. For objects that have separate top and bottom passes, keep those passes in separate \texttt{Top} and \texttt{Bottom} folders until after masks have been made for each side. Clean folders make it obvious which images belong to which pass and keep alignment from mixing them up. Import only the JPEGs prepared in the photography stage; do not import the RAW files.
+
+\subsubsection{Import and Align Photos}
+\begin{enumerate}[leftmargin=1.6em]
+  \item Drag the photo folder into RealityScan.
+  \item Open the Alignment tab and choose \textbf{Align Images} (F6).
+  \item Inspect the resulting sparse point cloud. The photo icons (camera positions) should surround the subject in the same rough shape as the capture path. If photos are obviously missing from the ring, or if a group aligns far away from the main cloud, remove the bad photos or improve the capture set before continuing.
+\end{enumerate}
+Alignment is where good photography pays off: RealityScan finds shared points between overlapping photos and solves where each camera was. \textbf{Common pitfall:} if the project aligns into two or more separate \emph{components} instead of one, the photos did not share enough overlap to connect, usually from too-large jumps between layers or a shiny/blank surface. The fix is on the capture side (more overlap, matte the surface), not in software. Re-aligning after removing a few bad photos is cheap, so do it before moving on.
+\figph{RealityScan after alignment: sparse point cloud with camera positions ringing the subject.}{images/realityring.png}
+
+\subsubsection{Set the Reconstruction Region and Mask}
+\begin{enumerate}[leftmargin=1.6em]
+  \item Resize and move the reconstruction region (the bounding box) so it contains only the object or area being modeled.
+  \item In the Tools tab, use \textbf{Cut by Box} to remove extra geometry, or \textbf{Cut Outer} to remove everything outside the reconstruction box.
+  \item Export masks for the selected photos. Save the masks into the same folder as the original images.
+  \item In the mask export settings, set \textbf{Export camera depths} to \textbf{No}; this setting is remembered for future mask exports.
+\end{enumerate}
+Masking tells RealityScan which pixels are the subject and which are the table, floor, or background, so only the subject becomes part of the model. Tightening the reconstruction region first means fewer stray points to clean up later and a faster mesh. Repeat this align, region, cut, and mask process for every separate side of an object before combining the sides. \textbf{Tip:} a mask does not have to be perfect; it just needs to exclude the obvious background and anything reflective or moving near the object.
+\figph{Reconstruction region tightened around the object, with the surrounding table and floor masked out.}{images/realityreconstruction.png}
+
+\subsubsection{Combine Sides When Needed}
+For objects with top and bottom passes, select both masked folders and drag them into RealityScan together, then align the combined image set. A successful result shows the sparse cloud and camera icons surrounding both sides of the model in a roughly spherical, wraparound shape. If the two sides do not connect, return to the photos and check for missing overlap between the passes, inconsistent lighting, or movement of the object between passes. \textbf{Tip:} the two passes connect most reliably when a band of the object's side is visible in both, giving them common points to lock onto.
+
+\subsubsection{Create, Clean, Texture, and Export the Model}
+\begin{enumerate}[leftmargin=1.6em]
+  \item Create the mesh in \textbf{Normal Detail}. Normal Detail is a good default because it preserves useful surface and texture detail without producing an unnecessarily heavy mesh; Preview is faster but rougher, and High Detail is slower and rarely needed for VR-scale assets.
+  \item Inspect the model for leftover chunks from the table, floor, or background.
+  \item Use the Lasso tool to select non-rectangular unwanted pieces. Ctrl+Left Click adds pieces to the selection; Shift+Left Click removes them.
+  \item Use \textbf{Filter Selection} to delete the selected unwanted geometry.
+  \item Texture/colorize the model and inspect the result. Click the photo markers to compare the model against the source images and confirm detail was captured correctly.
+  \item Create an \texttt{Export} folder and export the finished model as a Wavefront OBJ. Keep the \texttt{.obj}, its \texttt{.mtl}, and the exported texture \texttt{.png} images together, because Blender needs the mesh and the textures for the next step.
+\end{enumerate}
+\textbf{Pitfall:} do not over-invest in cleaning the RealityScan mesh. Delete the large obvious junk here, but leave detailed cleanup, hole-filling, and polygon reduction for Blender, where those tools are better. The goal of this stage is the best-aligned, best-textured raw model, not a finished asset.
+\figph{Textured model in RealityScan after meshing and cleanup, ready to export as OBJ.}{images/realityfinal.png}
+
+% ----------------------------------------------------------
+\subsection{Rigging in Blender, Common Workflow}
+\label{sec:common-rig}
+\inout{an initial 3D model (textured and colorized)}{a cleaned, decimated, and rigged model ready for Unity import}
+Blender is where the raw scan becomes a usable asset. RealityScan produces an accurate but heavy, messy mesh; Blender's job is to lighten it, repair what the scan missed, set it up at the right scale and orientation, and rig it if it needs to move. Work non-destructively where you can (duplicate the object or keep a backup before heavy decimation) so a bad reduction is easy to undo.
+
+\subsubsection{Prepare and Import}
+Before opening Blender, keep the OBJ model and its exported texture files in the same project folder. Import the OBJ (\textbf{File} $\rightarrow$ \textbf{Import} $\rightarrow$ \textbf{Wavefront (.obj)}), then check whether the texture appears in Material Preview or Rendered shading. If the model imports gray or untextured, open the Shader Editor and connect the Image Texture node to the material's Base Color. \textbf{Tip:} scanned models sometimes import looking dark or inside-out because their normals face inward. If so, enter Edit Mode, select all, and use \textbf{Mesh} $\rightarrow$ \textbf{Normals} $\rightarrow$ \textbf{Recalculate Outside}.
+\figph{OBJ imported into Blender with its texture connected in the Shader Editor.}{images/blendertexure.png}
+
+\subsubsection{Clean and Decimate}
+\begin{enumerate}[leftmargin=1.6em]
+  \item Enter Edit Mode and inspect the mesh from several angles.
+  \item Select faces that are unnecessary, floating, or visibly wrong, then delete them with \textbf{Delete Faces}.
+  \item Reduce the polygon count with the \textbf{Decimate} modifier (or \textbf{Mesh} $\rightarrow$ \textbf{Clean Up} $\rightarrow$ \textbf{Decimate Geometry}). Lower the ratio gradually rather than in one large step.
+  \item Inspect the model after each reduction. The goal is a lower-poly model that keeps the silhouette and the visible texture detail needed for VR.
+\end{enumerate}
+\textbf{Why it matters:} raw scans are far too dense for real-time VR, so decimation is what keeps the asset cheap to render. \textbf{Pitfall:} decimating too far flattens fine detail and can smear the texture across stretched faces; if the surface starts to look melted, step back to the previous ratio. Using the Decimate \emph{modifier} rather than the destructive tool lets you preview different ratios before committing.
+\figph{Before and after decimation: dense scan mesh reduced to a lighter VR-ready mesh.}{images/blenderdecimate.png}
+
+\subsubsection{Repair Missing or Bad Geometry}
+Some photogrammetry models have regions that were never scanned, especially undersides, interiors, or areas blocked by the table. For simple shapes, it is acceptable to separate the scanned portion from the bad portion and rebuild the missing area with basic modeling.
+\begin{enumerate}[leftmargin=1.6em]
+  \item Select the portion that should be separated. Holding Shift while selecting adds faces to the selection.
+  \item Press P (or right-click) and choose \textbf{Separate} / \textbf{Split} to isolate that portion from the rest of the mesh.
+  \item Delete faces that extrude incorrectly or are not part of the intended model.
+  \item Use simple planes, edge extrusion, and scaling to fill missing flat surfaces when the scanned texture is not needed for that hidden area.
+  \item If a newly built area shows the wrong texture, fix the UVs: in Face Select mode, select the affected faces, scale the UV island down, and place it over a blank or solid-color part of the texture image.
+\end{enumerate}
+\textbf{Tip:} only repair what will actually be seen. A hidden underside that never faces the VR camera can be left open or roughly capped; time spent rebuilding invisible geometry is wasted.
+
+\subsubsection{Set Scale, Orientation, and Origin}
+Before rigging or exporting, get the model into real-world terms so it drops into Unity correctly.
+\begin{enumerate}[leftmargin=1.6em]
+  \item Scale the model to its real size (Blender works in meters, and Unity treats one Blender meter as one unit).
+  \item Orient it upright and facing a sensible direction, then apply transforms with Ctrl+A (\textbf{All Transforms}) so scale and rotation are baked in.
+  \item Set a clean origin/pivot with \textbf{Object} $\rightarrow$ \textbf{Set Origin} (for example \textbf{Origin to Geometry}, or a base-center point) so the asset places predictably in Unity.
+\end{enumerate}
+Skipping this is the most common reason a model imports into Unity at the wrong size or lying on its side.
+
+\subsubsection{Rig or Parent the Model}
+Not every model needs an animation rig. Static objects may only need a cleaned mesh with a sensible origin, or a simple root/parent object for placement. Models that should animate need an armature.
+\begin{enumerate}[leftmargin=1.6em]
+  \item Add bones where control is needed. More bones give more control, but also require more setup and testing.
+  \item Switch to wireframe view when placing bones inside the model so the armature sits accurately within the mesh.
+  \item Select the model, then Shift-select the armature.
+  \item Press Ctrl/Cmd+P and choose \textbf{Parent with Automatic Weights}.
+  \item Test basic movement in Pose Mode before exporting. If the mesh bends poorly, adjust the bones or paint the weights before sending it to Unity.
+\end{enumerate}
+\figph{Armature placed inside the mesh in wireframe view, parented with automatic weights.}{images/blenderarmature.png}
+
+% ============================================================
+\section{Small / Medium Objects}
+\textit{Examples: a pack of gum, a shoe box.} Follow the Common Workflow (Section~\ref{sec:common}); only the differences are listed below.
+
+\subsection{Photography}
+\inout{camera and lighting set up per Section~\ref{sec:common-photo}}{organized photos of the object, split into Top and Bottom folders}
+
+\textbf{Focal length:} 35--50\,mm, with around 35\,mm used most often and giving good results. There's no need to zoom much beyond this.
+
+\paragraph{Capturing the object.} In both methods below, keep the object locked in place, fully inside the frame (no part cut off), and easy to flip. For example, a rock is always stable and can be flipped into another stable position, whereas a paper object can be shifted by a gust of wind, causing inconsistencies in the model.
+
+\textbf{Method 1 (recommended).}
+\begin{enumerate}[leftmargin=1.6em]
+  \item Walk around the object with the camera level to it, taking a photo about every 5--10\textdegree{} around the full 360\textdegree.
+  \item Starting from a level plane, rise while angling the camera down so the object stays centered, until you are directly above it. Repeat for every side and edge.
+  \item Flip the object upside down and repeat the whole process to fully capture the underside.
+\end{enumerate}
+\figph{Method~1 capture path for a small/medium object (level pass, rising angled-down pass, flipped pass).}{images/photo2.png}
+
+\textbf{Method 2.}
+\begin{enumerate}[leftmargin=1.6em]
+  \item Walk around the object, camera level, a photo every 5--10\textdegree{} for the full 360\textdegree.
+  \item Raise the camera about 15\textdegree{} and angle it down; capture the top following the same 5--10\textdegree{} spacing for a full 360\textdegree.
+  \item Raise the camera another 15\textdegree{}, angle it further down, and take another 360\textdegree{} pass (this batch captures more of the top surface).
+  \item Flip the object and repeat to fully capture the bottom, so the two sets can be combined.
+\end{enumerate}
+
+\noindent\textit{Rule of thumb:} if every other rule is followed, you can combine both methods to capture even more detailed photos.
+
+\textbf{Backgrounds:} Best results occur with limited objects or colors in the surroundings; it doesn't have to be empty, as long as the main object is the focus and meets the 70--80\% fill rule.
+
+\textbf{Shine:} Apply the shine-reduction guidance from Section~\ref{sec:common-shine} as needed.
+
+\subsection{RealityScan}
+\inout{organized photos of the object}{an initial 3D model (textured and colorized)}
+Use the common RealityScan workflow exactly as written in Section~\ref{sec:common-rs}. Small and medium objects are the cleanest use case for the \texttt{Top} and \texttt{Bottom} folder method because they can usually be flipped into a stable second position. Build masks for the top pass, repeat the same masking process for the bottom pass, and then align both masked folders together before creating the full model.
+
+\noindent If the object has a simple box-like shape, do not spend too much time trying to force RealityScan to perfectly reconstruct hidden inside faces or undersides. Capture as much real texture as possible, then repair simple missing geometry in Blender.
+
+\subsection{Rigging (Blender)}
+\inout{an initial 3D model of the textured, colorized object}{a finalized, textured, decimated, rigged object ready for Unity}
+For rigid small and medium objects, the Blender step is usually more cleanup than rigging. Remove leftover table/background geometry, decimate the mesh, and repair missing flat areas with simple modeled planes where needed. If the object will not animate, keep the mesh static and set a clean origin/pivot for Unity placement. If it needs to move as one piece, a simple root bone or parent object is usually enough.
+
+% ============================================================
+\section{Large Objects}
+\textit{Example: a desk.} Follow the Common Workflow (Section~\ref{sec:common}); only the differences are listed below. The main difference is that large objects often can't be flipped, so an alternative bottom-capture pass is provided.
+
+\subsection{Photography}
+\inout{camera and lighting set up per Section~\ref{sec:common-photo}}{organized photos of the object, split into Top and Bottom folders}
+
+\textbf{Focal length:} 25--40\,mm, with around 35\,mm used most often and giving good results.
+
+\paragraph{Capturing the object.} As before, keep the object locked in place and fully inside the frame.
+
+\textbf{Method 1 (if possible).}
+\begin{enumerate}[leftmargin=1.6em]
+  \item Walk around the object, camera level, a photo every 5--10\textdegree{} for the full 360\textdegree.
+  \item Rise from a level plane while angling the camera down to keep the object centered, until directly above it; repeat for every side and edge.
+  \item If the object can be flipped, flip it and repeat the full process for the underside.
+  \item \textbf{If it can't be flipped} (common for large objects): again start from a level plane, but this time \emph{lower} while angling the camera \emph{up} to keep the object centered, repeating for every side and edge to capture the bottom.
+\end{enumerate}
+% The two source photos are stored sideways (pdflatex ignores EXIF orientation),
+% so rotate each 90 deg counter-clockwise (angle=90) to stand the chair upright.
+\begin{center}
+\refstepcounter{figph}%
+\includegraphics[angle=90,width=0.49\linewidth]{images/photodown.jpg}\hfill
+\includegraphics[angle=90,width=0.49\linewidth]{images/photoup.jpg}\\[3pt]
+{\small\itshape Figure~\thefigph. Method~1 capture path for a large object, including the no-flip ``lower and angle up'' bottom pass.}%
+\end{center}
+
+\textbf{Method 2.}
+\begin{enumerate}[leftmargin=1.6em]
+  \item Walk around the object, camera level, a photo every 5--10\textdegree{} for the full 360\textdegree.
+  \item Raise the camera about 10--15\textdegree{}, angle down, and take a full 360\textdegree{} pass of the top.
+  \item Raise another 10--15\textdegree{}, angle further down, and take another 360\textdegree{} pass (more top surface).
+  \item If the object can be flipped, flip it and repeat to capture the bottom.
+  \item \textbf{If it can't be flipped:} after finishing the top, lower the camera about 10--15\textdegree{} and angle it up, taking a full 360\textdegree{} pass of the bottom; then lower another 10--15\textdegree{}, angle further up, and take another 360\textdegree{} pass (more bottom surface).
+\end{enumerate}
+
+\textbf{Backgrounds:} Same as Section~\ref{sec:common-photo}: limited objects/colors, with the object as the focus meeting the 70--80\% fill rule.
+
+\textbf{Shine:} Apply the shine-reduction guidance from Section~\ref{sec:common-shine} as needed.
+
+\subsection{RealityScan}
+\inout{organized photos of the object}{an initial 3D model (textured and colorized)}
+Follow the common RealityScan workflow, but expect the reconstruction region and masking step to matter more because the object is closer to the floor, walls, and surrounding furniture. If the object cannot be flipped, treat the lower angled pass as the bottom pass. Mask it separately, then combine it with the top pass in the final alignment.
+
+\noindent Large objects often have more incomplete undersides than small objects. If the sparse point cloud does not wrap cleanly under the object, do not overbuild the RealityScan model from bad data. Keep the best aligned mesh, then repair hidden or support surfaces in Blender.
+
+\subsection{Rigging (Blender)}
+\inout{an initial 3D model of the textured, colorized object}{a finalized, textured, decimated, rigged object ready for Unity}
+Large objects should be cleaned with Unity performance in mind. Remove any floor or wall fragments first, then decimate gradually while watching the silhouette and visible surface detail. For furniture or other rigid props, use a static mesh unless there is a specific reason to animate a component. If moving parts are needed, split those parts into separate objects before adding bones or parenting.
+
+% ============================================================
+\section{Extra Large Objects (Room)}
+Follow the Common Workflow (Section~\ref{sec:common}); the differences below are significant, because RealityScan is meant for specific objects rather than whole rooms, so room models will be limited and act mainly as a foundation.
+
+\subsection{Photography}
+\inout{camera and lighting set up for an enclosed space}{organized photos of the room}
+
+\textbf{Lighting:} Use flat, even lighting from the ceiling as much as possible. Do not let light come in from doors or windows.
+
+\textbf{Focal length:} 20--35\,mm, with the 30--35\,mm range being best to reduce distortion.
+
+\textbf{Focus:} Don't focus on any single point in the room; keep the photos ``flat'' so that as many details as possible for every object in the room are captured equally.
+
+\textbf{Filling the frame:} Capture as much of the room as possible at each level.
+
+\textbf{Orientation:} Shoot vertical to maximize the information in each photo. It takes more time than horizontal, but horizontal limits how much of the top and bottom of the room you see.
+
+\paragraph{Capturing the room.} Make sure windows aren't visible (shut curtains or cover them) and that nothing is moving, with all loose objects secured.
+\begin{enumerate}[leftmargin=1.6em]
+  \item Stand in the middle of the room (or the area you're capturing). Take a photo, turn slightly left by about 5--10\textdegree, and take another. Repeat for a full 360\textdegree.
+  \item Angle the camera up to capture the upper walls and roof, again a photo every 5--10\textdegree{} for a full 360\textdegree.
+  \item Angle the camera down to capture the lower walls and floor, again a photo every 5--10\textdegree{} for a full 360\textdegree.
+\end{enumerate}
+At this point a room model can be rendered to act as a starting point for mimicking rooms.
+% Room photos are stored sideways (pdflatex ignores EXIF orientation),
+% so rotate each 90 deg counter-clockwise (angle=90) to stand them upright.
+\begin{center}
+\refstepcounter{figph}%
+\includegraphics[angle=90,width=0.32\linewidth]{images/roombot.JPG}\hfill
+\includegraphics[angle=90,width=0.32\linewidth]{images/roommed.JPG}\hfill
+\includegraphics[angle=90,width=0.32\linewidth]{images/roomtop.JPG}\\[3pt]
+{\small\itshape Figure~\thefigph. Three-pass room capture from a central standing position (left to right: angled down, level, and angled up).}%
+\end{center}
+
+\paragraph{Adding detail (optional).} For more detail, take photos above/in front of the furniture, circling the room with 60--80\% overlap per photo so RealityScan knows where each photo is angled relative to the others. If you want something specific captured (e.g., the inside of an open bag), photograph everything in and around it, with transitions between the ``major'' angles. Don't be afraid to capture from slightly different angles to show how an object looks on all sides.
+
+\paragraph{Reducing glare in a room.} Capturing rooms doesn't allow the normal use of scanning spray, dry shampoo, or cross-polarization, so reduce glare in this order:
+\begin{enumerate}[leftmargin=1.6em]
+  \item Remove as many reflective objects as possible.
+  \item Cover any reflective objects that can't be moved (e.g., drape a blanket over a fixed mirror).
+  \item As a last, labor-intensive option, coat remaining reflective objects with scanning spray.
+  \item For anything that still can't be moved or covered, limit the number of photos that include it.
+\end{enumerate}
+If there are too many mirrored objects you can't deal with, the room likely can't be captured with 2D photos alone, and LiDAR scanning (to sense object depths) becomes the better option.
+
+\subsection{RealityScan}
+\inout{organized photos of the room}{an initial 3D model (textured and colorized)}
+Rooms usually use one combined image set rather than a \texttt{Top}/\texttt{Bottom} split. Import the full room photo set, align all photos together, and check that the camera icons form a coherent 360\textdegree{} pattern around the room. Use the reconstruction region as a room boundary, cutting away anything outside the intended capture area.
+\figph{Reconstruction region used as a room boundary, with cameras forming a 360\textdegree{} pattern from the room's center.}{images/roomreconstructionregion.png}
+
+\noindent Treat the result as a foundation model rather than a perfect room scan. RealityScan may struggle with repeated wall textures, reflective objects, blank surfaces, and areas hidden behind furniture. If an object in the room needs to be high quality, scan that object separately using the small/medium or large-object process, then place the cleaner asset into the room later in Unity.
+
+\subsection{Rigging (Blender)}
+\inout{an initial 3D model of the textured, colorized room}{a finalized, textured, decimated, rigged room ready for Unity}
+Room models should normally stay static. The Blender work is cleanup, decimation, and scale/orientation preparation, not character-style rigging. Delete floating fragments, reduce polygon count aggressively enough for VR use, and consider splitting large room geometry into manageable pieces if Unity performance becomes an issue.
+
+% ============================================================
+\section{Person}
+Follow the Common Workflow (Section~\ref{sec:common}); the key difference is that RealityScan really only works for non-moving subjects, so the entire challenge is keeping the person still.
+
+\subsection{Photography}
+\inout{camera and lighting set up around a seated person}{organized photos of the person}
+
+\textbf{Focal length:} 35--50\,mm, with around 35\,mm used most often and giving good results. Don't zoom; keep the person in focus.
+
+\textbf{Filling the frame:} Capture the chest and above, filling about 70--80\% of the frame. Position yourself based on your focal length to meet this.
+
+\textbf{Orientation:} Horizontal or vertical depending on the situation.
+
+\paragraph{Capturing the person.} The person must stay completely still, blinking between photos at most, for the full duration (about 5--10 minutes). Seat them in a flat chair with arms resting on their legs to limit movement.
+\begin{enumerate}[leftmargin=1.6em]
+  \item Start at the person's face, camera level, taking photos every 5--10\textdegree{} (following the usual photo guidelines).
+  \item Raise the camera about 10--15\textdegree{} for a higher angle, again every 5--10\textdegree.
+  \item Raise another 10--15\textdegree{} for an even higher angle, again every 5--10\textdegree.
+  \item Return to the level plane, then lower the camera about 10--15\textdegree{} for a lower angle; this pass only needs to happen once.
+\end{enumerate}
+Work as efficiently as possible to limit movement. If the person clearly moves (repositions an arm, itches, smiles, etc.), the process has to restart so that as many characteristics as possible stay the same.
+\figph{Capture angles for a seated person (face-level pass, two raised passes, one lowered pass).}{images/photolowerpass.png}
+
+\textbf{Jewelry / shine:} If the person is wearing shiny jewelry, try to have them remove it. If that's undesired, use the shine- and glare-reduction methods from Section~\ref{sec:common-shine} (scanning spray or cross-polarization).
+
+\subsection{RealityScan}
+\inout{organized photos of the person}{an initial 3D model (textured and colorized)}
+People are aligned as one image set; do not use a top/bottom folder split. Import the full capture, align the images, and inspect the sparse point cloud carefully. Missing or misaligned photos usually mean the person moved too much, the face changed expression, or hair/clothing details did not stay consistent enough between photos.
+
+\noindent Use the reconstruction region to isolate the bust or body area being kept. Cut away the chair, floor, and background before meshing where possible. After meshing, remove remaining fragments and texture the model before exporting to Blender.
+
+\subsection{Rigging (Blender)}
+\inout{an initial 3D model of the textured, colorized person}{a finalized, textured, decimated, rigged model ready for Unity}
+People are the category most likely to need a real armature. After cleanup and decimation, switch to wireframe view so the bones can be positioned inside the model. Add the bones needed for the intended motion, select the person mesh, then select the armature and use Ctrl/Cmd+P with \textbf{Parent with Automatic Weights}. Test a few simple poses before exporting; if the bust or body collapses unnaturally, fix the weights in Blender before importing into Unity. In Unity, a scanned bust usually imports as a \textbf{Generic} rig rather than \textbf{Humanoid}, since it does not have a standard humanoid skeleton.
+
+% ============================================================
+\section{Importing into Unity}
+\inout{a finalized, textured, decimated, rigged model from any category above}{the model placed and running in Unity for VR/simulation use}
+Unity is the final destination, where every model regardless of category ends up. Because this step is identical for all scans, it is documented once here. The goals of the handoff are to keep the mesh and its textures together so Unity can resolve the material paths, and to bring the model in at the correct scale, orientation, and rig type.
+
+\subsection{Export from Blender}
+Keep the mesh, Blender file, exported FBX, and texture images together so paths resolve on both sides.
+\begin{enumerate}[leftmargin=1.6em]
+  \item Organize the project so the model and textures stay in one folder, for example \texttt{Model/Model.blend} and \texttt{Model/Textures/}.
+  \item Confirm the material works in the Shader Editor: the Image Texture node should feed the material's Base Color.
+  \item If Blender cannot locate the textures, use \textbf{File} $\rightarrow$ \textbf{External Data} $\rightarrow$ \textbf{Find Missing Files}.
+  \item Use \textbf{File} $\rightarrow$ \textbf{External Data} $\rightarrow$ \textbf{Make All Paths Relative} so the folder can move without breaking texture links.
+  \item Export an FBX (\textbf{File} $\rightarrow$ \textbf{Export} $\rightarrow$ \textbf{FBX}). Include the mesh, and the armature too when the model is rigged. Set \textbf{Path Mode: Relative} and leave \textbf{Embed Textures} off, since the texture folder is imported alongside the FBX. Confirm transforms were applied in Blender first (Section~\ref{sec:common-rig}) so the model does not arrive rotated or mis-scaled.
+\end{enumerate}
+
+\subsection{Import and Set Up in Unity}
+\begin{enumerate}[leftmargin=1.6em]
+  \item Drag the whole model folder into the Assets panel, then drag the FBX into the scene.
+  \item On the model's Import Settings, check the \textbf{Scale Factor} and confirm the real-world size looks right next to a reference object. Confirm the model sits upright; if it is on its side, it usually means transforms were not applied in Blender.
+  \item Assign or extract materials and confirm the texture (Base Color / Albedo) is connected. Scanned textures already contain baked-in lighting, so keep them fairly matte: lower the material \textbf{Smoothness} if the surface looks unnaturally glossy in the scene.
+  \item Set the rig import type to match the asset. Static props can stay as plain meshes; articulated objects and people should use the appropriate rig type and be tested with a simple animation before VR use.
+  \item Add a collider if the object needs to be interacted with or stood on in VR.
+\end{enumerate}
+
+\noindent For VR/simulation use, inspect the model in-scene before calling it finished: confirm the polygon count is reasonable for real-time rendering, the textures load correctly, the object is oriented upright, and the real-world scale feels correct next to other assets.
+\figph{Final scanned model placed in a Unity scene.}{images/unity.png}
+
+% ============================================================
+\section{Future Research}
+\label{sec:future}
+
+\subsection{Scanning Spray and Cross-Polarization}
+KCNSC has approved scanning spray, but we couldn't access it and had to substitute dry shampoo, which reduced glare at the cost of color accuracy. From research, the most professional way to remove glare is cross-polarization: place polarizing sheets over the light sources and a circular polarizing filter on the lens, rotated 90\textdegree{} relative to the lights. This removes the glare.
+
+\subsection{Turntable}
+During testing of rotating the object for photos, many models did not develop correctly, however much research states that RealityScan does support rotating the object. The limitations could be due to invalid materials. Further testing with more professional equipment and turntables may reveal more control for scans, leading to better/more consistent model creation.
+
+
+\subsection{Lighting}
+The lighting requirements were clear, but much of the testing used less-than-ideal lighting and still succeeded. Further research into exactly how much great lighting improves the photos, to find the sweet spot between convenience and fully capturing the object, would be ideal.
+
+\subsection{LiDAR with RealityScan}
+RealityScan supports LiDAR, along with photos to support it. Combining LiDAR and photos to build a model could be a major step toward more accurate models and may also reduce the glare problem: the LiDAR data creates a point cloud (like a model) while the photos support it.
+
+\subsection{Photography Setups (Including Object Elevation)}
+The best setups would have great lighting covered by polarizing films and multiple cameras aimed at the object (potentially 100+ cameras to capture everything at once), using measured angles so each camera aligns perfectly and the object is captured from many angles at a single moment in time. This would reduce errors from framing (every camera can be set up and checked for perfect framing) and from movement (RealityScan hates movement, but capturing everything in one moment means there is no measurable movement). It would especially excel at capturing humans, whose micro-movements are nearly invisible to the eye but are significant for RealityScan models.
+
+% ============================================================
+\section{Conclusion}
+\noindent This project produced a practical, repeatable pipeline for creating Unity-ready 3D models from ordinary 2D photographs, without relying on AI or cloud services. By organizing the workflow around object scale (small/medium objects, large objects, rooms, and people) and by following a consistent set of photography rules (sufficient overlap, matte surfaces, controlled lighting, and consistent subjects), accessible equipment can produce models suitable for VR and simulation use. RealityScan provides the first textured model, Blender turns that raw scan into a cleaner and lighter asset, and Unity provides the final environment where the model can be tested at scale. The largest remaining limitations involve reflective surfaces, hidden undersides, human movement, and whole-room capture, all of which point toward LiDAR and improved capture setups as natural next steps for future work.
+
+\end{document}
